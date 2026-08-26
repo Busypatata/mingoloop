@@ -1,0 +1,23 @@
+@import "./styles/fonts.css";
+@import "tailwindcss";
+@import "./styles/theme.css";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-secondary: #6f6f6f;
+  --color-muted: #999999;
+  --color-glass: rgba(255, 255, 255, 0.65);
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
