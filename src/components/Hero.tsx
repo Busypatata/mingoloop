@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useLoopingVideoFade } from '../hooks/useLoopingVideoFade';
 import Navbar from './Navbar';
 
@@ -63,12 +64,13 @@ export default function Hero() {
             Meet people from around the world, practice languages together.
           </p>
 
-          <button
-            className="rounded-full px-14 py-5 text-base mt-12 animate-fade-rise-delay-2 transition-transform duration-200 hover:scale-[1.03]"
+          <Link
+            to="/register"
+            className="rounded-full px-14 py-5 text-base mt-12 animate-fade-rise-delay-2 transition-transform duration-200 hover:scale-[1.03] inline-block"
             style={{ backgroundColor: '#000000', color: '#FFFFFF' }}
           >
             Begin Journey
-          </button>
+          </Link>
         </section>
       </div>
     </div>
