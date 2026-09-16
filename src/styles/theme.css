@@ -31,3 +31,20 @@
 .animate-fade-rise-delay-2 {
   animation: fade-rise 0.8s ease-out 0.4s both;
 }
+
+/* Gentle idle float for decorative language characters — small, slow,
+   never bouncing. Individual duration/delay are set inline per element. */
+@keyframes mingoloop-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(1.5deg);
+  }
+}
+
+.mingoloop-float {
+  animation-name: mingoloop-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}

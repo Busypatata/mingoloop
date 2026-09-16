@@ -10,6 +10,27 @@
   --color-glass: rgba(255, 255, 255, 0.65);
   --font-display: 'Instrument Serif', serif;
   --font-body: 'Inter', sans-serif;
+
+  /* Authenticated-app palette — used only inside the logged-in product,
+     kept separate from the public landing/hero identity above. */
+  --color-ink: #11110f;
+  --color-canvas: #f7f5f0;
+  --color-cream: #f2efe8;
+  --color-app-text: #111111;
+  --color-app-text-secondary: #73716d;
+  --color-app-text-muted: #9a9893;
+  --color-accent: #8b5cf6;
+  --color-accent-warm: #f0a67a;
+
+  /* Public marketing site palette — turquoise/coral brand identity,
+     used only on the logged-out landing page. */
+  --color-turquoise: #46e7df;
+  --color-coral: #e7464e;
+  --color-light-turquoise: #8af0eb;
+  --color-deep-red: #c71a22;
+  --color-aqua: #c3e9e7;
+  --color-muted-blue: #93c5d6;
+  --color-landing-bg: #fbfaf7;
 }
 
 html, body, #root {
@@ -20,4 +41,12 @@ body {
   font-family: var(--font-body);
   background-color: var(--color-background);
   color: var(--color-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import AppNav from '../components/AppNav';
 import type { DiscoverResult } from '../types/user';
 
 export default function Discover() {
   const [results, setResults] = useState<DiscoverResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     api
@@ -15,18 +17,20 @@ export default function Discover() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  return (
-    <div className="min-h-screen bg-white px-6 py-10 md:px-16">
-      <header className="max-w-5xl mx-auto mb-12">
-        <span
-          className="text-2xl tracking-tight"
-          style={{ fontFamily: 'var(--font-display)', color: '#000000' }}
-        >
-          MingoLoop<sup className="text-sm align-super">®</sup>
-        </span>
-      </header>
+  async function handleConnect(userId: string) {
+    try {
+      await api.post('/friends/request', { userId });
+      setSentTo((prev) => new Set(prev).add(userId));
+    } catch {
+      // Silently ignore — the button will simply remain clickable to retry.
+    }
+  }
 
-      <main className="max-w-5xl mx-auto">
+  return (
+    <div className="min-h-screen bg-white">
+      <AppNav />
+
+      <main className="max-w-5xl mx-auto px-6 py-10 md:px-16">
         <h1
           className="text-4xl sm:text-5xl mb-2"
           style={{ fontFamily: 'var(--font-display)', color: '#000000' }}
@@ -91,10 +95,12 @@ export default function Discover() {
                   {person.compatibility}% match
                 </span>
                 <button
-                  className="px-6 py-2.5 rounded-full text-sm transition-transform duration-200 hover:scale-[1.03]"
+                  onClick={() => handleConnect(person.id)}
+                  disabled={sentTo.has(person.id)}
+                  className="px-6 py-2.5 rounded-full text-sm transition-transform duration-200 hover:scale-[1.03] disabled:opacity-50 disabled:cursor-default disabled:hover:scale-100"
                   style={{ backgroundColor: '#000000', color: '#FFFFFF' }}
                 >
-                  Connect
+                  {sentTo.has(person.id) ? 'Request sent' : 'Connect'}
                 </button>
               </div>
             </div>

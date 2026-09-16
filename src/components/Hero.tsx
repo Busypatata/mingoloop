@@ -1,78 +1,55 @@
 import { Link } from 'react-router-dom';
-import { useLoopingVideoFade } from '../hooks/useLoopingVideoFade';
 import Navbar from './Navbar';
-
-const VIDEO_URL =
-  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4';
+import LanguageIllustration from './LanguageIllustration';
 
 export default function Hero() {
-  const { videoRef, opacity, hasError } = useLoopingVideoFade();
-
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background video layer */}
-      <div className="absolute z-0" style={{ top: '300px', inset: 'auto 0 0 0' }}>
-        {!hasError ? (
-          <video
-            ref={videoRef}
-            src={VIDEO_URL}
-            muted
-            playsInline
-            autoPlay
-            className="h-full w-full object-cover"
-            style={{ opacity, transition: 'opacity 0.1s linear' }}
-          />
-        ) : (
-          <div
-            className="h-full w-full"
-            style={{
-              background:
-                'linear-gradient(180deg, #f4f4f4 0%, #e5e5e5 50%, #ffffff 100%)',
-            }}
-          />
-        )}
-      </div>
+    <div className="min-h-screen w-full" style={{ backgroundColor: 'var(--color-landing-bg)' }}>
+      <Navbar />
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background z-0" />
-
-      {/* Navigation + Hero content sit above the video */}
-      <div className="relative z-10">
-        <Navbar />
-
-        <section
-          className="flex flex-col items-center justify-center text-center px-6"
-          style={{ paddingTop: 'calc(8rem - 75px)', paddingBottom: '10rem' }}
-        >
+      <section className="max-w-7xl mx-auto px-8 pt-10 pb-24 flex flex-col lg:flex-row items-center gap-16">
+        <div className="flex-1 w-full max-w-xl">
           <h1
-            className="max-w-7xl font-normal animate-fade-rise text-5xl sm:text-7xl md:text-8xl"
-            style={{
-              fontFamily: 'var(--font-display)',
-              lineHeight: 0.95,
-              letterSpacing: '-2.46px',
-              color: '#000000',
-            }}
+            className="font-normal animate-fade-rise text-5xl sm:text-6xl md:text-7xl"
+            style={{ fontFamily: 'var(--font-display)', lineHeight: 1.08 }}
           >
-            Say hello{' '}
-            <em className="italic" style={{ color: '#6F6F6F' }}>in another language.</em>
+            <span style={{ color: '#111111' }}>Speak Freely.</span>
+            <br />
+            <span style={{ color: 'var(--color-coral)' }}>Connect Deeply.</span>
+            <br />
+            <span style={{ color: 'var(--color-turquoise)' }}>Learn Naturally.</span>
           </h1>
 
           <p
-            className="max-w-2xl mt-8 text-base sm:text-lg leading-relaxed animate-fade-rise-delay"
-            style={{ color: '#6F6F6F' }}
+            className="mt-8 text-base sm:text-lg leading-relaxed animate-fade-rise-delay"
+            style={{ color: '#5A5A5A', maxWidth: 460 }}
           >
-            Meet people from around the world, practice languages together.
+            A space to practice languages, make real connections, and explore cultures
+            together.
           </p>
 
-          <Link
-            to="/register"
-            className="rounded-full px-14 py-5 text-base mt-12 animate-fade-rise-delay-2 transition-transform duration-200 hover:scale-[1.03] inline-block"
-            style={{ backgroundColor: '#000000', color: '#FFFFFF' }}
-          >
-            Begin Journey
-          </Link>
-        </section>
-      </div>
+          <div className="flex flex-wrap items-center gap-4 mt-10 animate-fade-rise-delay-2">
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm transition-transform duration-200 hover:scale-[1.03] hover:gap-3"
+              style={{ backgroundColor: 'var(--color-coral)', color: '#FFFFFF' }}
+            >
+              Start Learning <span aria-hidden="true">→</span>
+            </Link>
+            <Link
+              to="/about"
+              className="inline-flex items-center rounded-full px-7 py-3.5 text-sm border transition-colors"
+              style={{ borderColor: 'var(--color-turquoise)', color: '#111111', backgroundColor: 'transparent' }}
+            >
+              Explore Community
+            </Link>
+          </div>
+        </div>
+
+        <div className="flex-1 w-full flex justify-center">
+          <LanguageIllustration />
+        </div>
+      </section>
     </div>
   );
 }
