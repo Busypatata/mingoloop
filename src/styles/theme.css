@@ -48,3 +48,25 @@
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
+
+/* Discover page — subtle hover treatments, kept as CSS classes since the
+   accent colors involved are only available as CSS custom properties. */
+.discover-connect-btn {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.discover-connect-btn:not(:disabled):hover {
+  background-color: var(--color-deep-red);
+}
+
+.discover-search-btn {
+  transition: background-color 0.2s ease;
+}
+
+.discover-search-btn:hover {
+  background-color: var(--color-deep-red);
+}
+
+.discover-chip:hover {
+  filter: brightness(0.97);
+}
