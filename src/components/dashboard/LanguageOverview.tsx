@@ -1,6 +1,6 @@
 import type { LanguageEntry } from '../../types/user';
 
-const PROFICIENCY_PERCENT: Record<string, number> = {
+export const PROFICIENCY_PERCENT: Record<string, number> = {
   Beginner: 15,
   Elementary: 30,
   Intermediate: 50,

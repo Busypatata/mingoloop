@@ -80,3 +80,50 @@
 .friends-message-btn:hover {
   background-color: var(--color-deep-red);
 }
+
+/* Dashboard — outlined feature-card CTAs get a soft pastel hover fill
+   using their own accent color (turquoise or coral), set via --btn-tone. */
+.dashboard-outline-btn:hover {
+  background-color: color-mix(in srgb, var(--btn-tone) 12%, white);
+}
+
+/* Notification bell — subtle hover per notification.txt spec. */
+.notif-bell-btn {
+  transition: background-color 0.2s ease;
+}
+
+.notif-bell-btn:hover {
+  background-color: color-mix(in srgb, var(--color-turquoise) 16%, white);
+}
+
+/* Notification dropdown — subtle open animation and row hover. */
+@keyframes notif-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-notif-in {
+  animation: notif-in 180ms ease-out;
+}
+
+.notif-row {
+  transition: background-color 0.15s ease;
+}
+
+.notif-row:hover {
+  background-color: #F3FBFA;
+}
+
+.notif-mark-read {
+  transition: color 0.15s ease;
+}
+
+.notif-mark-read:hover {
+  color: var(--color-turquoise);
+}

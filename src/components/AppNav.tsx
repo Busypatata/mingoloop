@@ -78,18 +78,25 @@ export default function AppNav() {
           <div className="relative">
             <button
               onClick={() => setShowNotifications((v) => !v)}
-              className="text-sm relative"
-              style={{ color: '#73716D' }}
+              className="notif-bell-btn relative flex items-center justify-center flex-shrink-0"
+              style={{ width: 44, height: 44, borderRadius: 9999, backgroundColor: '#E8FAF8' }}
               aria-label="Notifications"
             >
-              Notifications
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M6 10a6 6 0 1112 0c0 3.2 1 5 2 6H4c1-1 2-2.8 2-6Z"
+                  stroke="var(--color-turquoise)"
+                  strokeWidth="1.7"
+                  strokeLinejoin="round"
+                />
+                <path d="M9.5 19a2.5 2.5 0 005 0" stroke="var(--color-turquoise)" strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
               {unreadCount > 0 && (
                 <span
-                  className="absolute -top-2 -right-3 text-[10px] rounded-full px-1.5 py-0.5 text-white"
-                  style={{ backgroundColor: '#E7464E' }}
-                >
-                  {unreadCount}
-                </span>
+                  className="absolute rounded-full"
+                  style={{ width: 11, height: 11, top: 1, right: 1, backgroundColor: '#E7464E', border: '2px solid #ffffff' }}
+                  aria-hidden="true"
+                />
               )}
             </button>
             {showNotifications && <NotificationsDropdown onClose={() => setShowNotifications(false)} />}

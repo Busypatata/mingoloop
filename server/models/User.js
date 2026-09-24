@@ -47,6 +47,9 @@ const userSchema = new mongoose.Schema(
     availability: { type: String, default: '' },
     onboardingComplete: { type: Boolean, default: false },
 
+    resetPasswordTokenHash: { type: String, select: false },
+    resetPasswordExpires: { type: Date, select: false },
+
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
