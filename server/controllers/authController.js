@@ -14,10 +14,20 @@ function toPublicUser(user) {
     country: user.country,
     nativeLanguages: user.nativeLanguages,
     learningLanguages: user.learningLanguages,
+    otherLanguages: user.otherLanguages,
     interests: user.interests,
     conversationPreferences: user.conversationPreferences,
     lookingFor: user.lookingFor,
+    availability: user.availability,
+    learningMotivation: user.learningMotivation,
+    practiceStyle: user.practiceStyle,
     onboardingComplete: user.onboardingComplete,
+    createdAt: user.createdAt,
+    profileVisibility: user.profileVisibility,
+    messagePermission: user.messagePermission,
+    showNativeLanguage: user.showNativeLanguage,
+    showLearningLanguages: user.showLearningLanguages,
+    showOnlineStatus: user.showOnlineStatus,
   };
 }
 
@@ -162,6 +172,32 @@ export async function resetPassword(req, res) {
     res.json({ message: 'Your password has been reset. You can now sign in.' });
   } catch (error) {
     res.status(500).json({ message: 'Something went wrong. Please try again.' });
+  }
+}
+
+export async function changePassword(req, res) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are both required.' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters.' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect.' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ message: 'Your password has been updated.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Something went wrong while updating your password. Please try again.' });
   }
 }
 

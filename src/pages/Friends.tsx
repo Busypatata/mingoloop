@@ -103,7 +103,7 @@ export default function Friends() {
       <AppNav />
 
       <div className="relative px-6 pt-8 pb-24 md:px-10">
-        <FriendsDecorativeNotes />
+        <FriendsDecorativeNotes showText={false} />
         <FloatingLetters />
 
         <main className="relative z-10 max-w-[1240px] mx-auto">

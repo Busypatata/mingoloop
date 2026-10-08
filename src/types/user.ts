@@ -3,6 +3,8 @@ export interface LanguageEntry {
   proficiency?: string;
 }
 
+export type AudienceOption = 'Everyone' | 'Matches' | 'Nobody';
+
 export interface User {
   id: string;
   name: string;
@@ -13,10 +15,20 @@ export interface User {
   country?: string;
   nativeLanguages: LanguageEntry[];
   learningLanguages: LanguageEntry[];
+  otherLanguages: LanguageEntry[];
   interests: string[];
   conversationPreferences: string[];
   lookingFor: string[];
+  availability: string;
+  learningMotivation: string[];
+  practiceStyle: string;
   onboardingComplete: boolean;
+  createdAt?: string;
+  profileVisibility: AudienceOption;
+  messagePermission: AudienceOption;
+  showNativeLanguage: boolean;
+  showLearningLanguages: boolean;
+  showOnlineStatus: boolean;
 }
 
 export interface DiscoverResult {
@@ -65,6 +77,9 @@ export interface ChatMessage {
   conversationId: string;
   sender: string;
   text: string;
+  // Present on voice messages (text is empty for those).
+  audioUrl?: string;
+  audioDuration?: number;
   createdAt: string;
   readBy?: string[];
 }

@@ -3,6 +3,7 @@ import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db.js';
+import { UPLOADS_DIR, setAudioHeaders } from './middleware/uploadAudio.js';
 import { initSockets } from './sockets/index.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -24,6 +25,13 @@ app.use(express.json());
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Voice messages. Files have random names; static serving also gives the
+// <audio> element the range requests it needs for seeking.
+app.use(
+  '/uploads',
+  express.static(UPLOADS_DIR, { index: false, setHeaders: setAudioHeaders })
+);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

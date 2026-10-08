@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import NotificationsDropdown from './NotificationsDropdown';
-import InitialsAvatar from './InitialsAvatar';
+import FriendAvatar from './friends/FriendAvatar';
 
 const LINKS = [
   { to: '/dashboard', label: 'Home' },
@@ -106,7 +106,11 @@ export default function AppNav() {
             Log out
           </button>
 
-          {user && <InitialsAvatar name={user.name} size={32} />}
+          {user && (
+            <Link to="/profile" aria-label="Your profile" className="flex-shrink-0">
+              <FriendAvatar name={user.name} avatar={user.avatar} size={32} />
+            </Link>
+          )}
         </div>
       </nav>
     </div>

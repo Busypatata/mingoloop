@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getMe, forgotPassword, resetPassword } from '../controllers/authController.js';
+import { register, login, getMe, forgotPassword, resetPassword, changePassword } from '../controllers/authController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -9,5 +9,6 @@ router.post('/login', login);
 router.get('/me', requireAuth, getMe);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
+router.put('/change-password', requireAuth, changePassword);
 
 export default router;

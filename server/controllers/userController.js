@@ -1,5 +1,6 @@
 import { User } from '../models/User.js';
 import { toPublicUser } from './authController.js';
+import { isLanguageMatch } from '../utils/matching.js';
 
 export async function completeOnboarding(req, res) {
   try {
@@ -44,13 +45,52 @@ export async function updateProfile(req, res) {
       'avatar',
       'nativeLanguages',
       'learningLanguages',
+      'otherLanguages',
       'interests',
       'conversationPreferences',
       'lookingFor',
       'availability',
+      'learningMotivation',
+      'practiceStyle',
+      'profileVisibility',
+      'messagePermission',
+      'showNativeLanguage',
+      'showLearningLanguages',
+      'showOnlineStatus',
     ];
 
     const user = await User.findById(req.user._id);
+
+    // Username and email aren't in allowedFields above because, unlike the
+    // rest, they carry a uniqueness constraint — the same rule register()
+    // enforces at signup.
+    if (req.body.username !== undefined) {
+      const nextUsername = String(req.body.username).trim().toLowerCase();
+      if (!nextUsername) {
+        return res.status(400).json({ message: 'Username cannot be empty.' });
+      }
+      if (nextUsername !== user.username) {
+        const existing = await User.findOne({ username: nextUsername });
+        if (existing) {
+          return res.status(409).json({ message: 'That username is already taken.' });
+        }
+        user.username = nextUsername;
+      }
+    }
+
+    if (req.body.email !== undefined) {
+      const nextEmail = String(req.body.email).trim().toLowerCase();
+      if (!nextEmail) {
+        return res.status(400).json({ message: 'Email cannot be empty.' });
+      }
+      if (nextEmail !== user.email) {
+        const existing = await User.findOne({ email: nextEmail });
+        if (existing) {
+          return res.status(409).json({ message: 'That email is already in use.' });
+        }
+        user.email = nextEmail;
+      }
+    }
 
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
@@ -62,6 +102,10 @@ export async function updateProfile(req, res) {
 
     res.json({ user: toPublicUser(user) });
   } catch (error) {
+    if (error?.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'value';
+      return res.status(409).json({ message: `That ${field} is already in use.` });
+    }
     res.status(500).json({ message: 'Something went wrong while updating your profile. Please try again.' });
   }
 }
@@ -109,6 +153,14 @@ export async function discoverUsers(req, res) {
     const candidates = await User.find({ _id: { $ne: me._id } }).limit(50);
 
     const results = candidates
+      // Respect each candidate's own "who can discover my profile" setting.
+      // Compatibility (which needs the real language data) is computed
+      // before any display-masking below.
+      .filter((candidate) => {
+        if (candidate.profileVisibility === 'Nobody') return false;
+        if (candidate.profileVisibility === 'Matches') return isLanguageMatch(me, candidate);
+        return true;
+      })
       .map((candidate) => ({
         id: candidate._id,
         name: candidate.name,
@@ -116,8 +168,8 @@ export async function discoverUsers(req, res) {
         avatar: candidate.avatar,
         bio: candidate.bio,
         country: candidate.country,
-        nativeLanguages: candidate.nativeLanguages,
-        learningLanguages: candidate.learningLanguages,
+        nativeLanguages: candidate.showNativeLanguage ? candidate.nativeLanguages : [],
+        learningLanguages: candidate.showLearningLanguages ? candidate.learningLanguages : [],
         interests: candidate.interests,
         compatibility: compatibilityScore(me, candidate),
       }))

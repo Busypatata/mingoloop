@@ -9,7 +9,17 @@ import FriendsDecorativeNotes from '../components/friends/FriendsDecorativeNotes
 import FriendAvatar from '../components/friends/FriendAvatar';
 import ConversationRow from '../components/messages/ConversationRow';
 import MessagesEmptyState from '../components/messages/MessagesEmptyState';
+import MessageBubble from '../components/messages/MessageBubble';
+import { useVoiceRecorder, type RecordedAudio } from '../hooks/useVoiceRecorder';
 import type { ChatMessage, ConversationSummary } from '../types/user';
+
+const VOICE_PREVIEW = 'Voice message';
+
+function formatDuration(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
 
 const PANEL_STYLE = {
   backgroundColor: '#ffffff',
@@ -29,8 +39,25 @@ export default function Messages() {
   const [draft, setDraft] = useState('');
   const [isTypingOther, setIsTypingOther] = useState(false);
   const [query, setQuery] = useState('');
+  const [chatError, setChatError] = useState('');
+  const [uploadingVoice, setUploadingVoice] = useState(false);
   const typingTimeout = useRef<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const {
+    recording,
+    seconds: recordingSeconds,
+    error: recorderError,
+    start: startRecording,
+    stop: stopRecording,
+    cancel: cancelRecording,
+  } = useVoiceRecorder({ onAutoStop: (audio) => void sendVoice(audio) });
+
+  // Switching conversations drops any in-progress recording and stale errors.
+  useEffect(() => {
+    cancelRecording();
+    setChatError('');
+  }, [conversationId, cancelRecording]);
 
   useEffect(() => {
     api.get('/messages/conversations').then((res) => setConversations(res.data));
@@ -58,12 +85,21 @@ export default function Messages() {
 
     function handleReceive(payload: ChatMessage) {
       if (payload.conversationId === conversationId) {
-        setMessages((prev) => [...prev, payload]);
+        // Skip if already added (e.g. our own voice message arrives both from
+        // the upload response and from the socket).
+        setMessages((prev) => (prev.some((m) => m.id === payload.id) ? prev : [...prev, payload]));
       }
       setConversations((prev) =>
         prev.map((c) =>
           c.id === payload.conversationId
-            ? { ...c, lastMessage: { text: payload.text, sender: payload.sender, sentAt: payload.createdAt } }
+            ? {
+                ...c,
+                lastMessage: {
+                  text: payload.audioUrl ? VOICE_PREVIEW : payload.text,
+                  sender: payload.sender,
+                  sentAt: payload.createdAt,
+                },
+              }
             : c
         )
       );
@@ -106,6 +142,47 @@ export default function Messages() {
     if (!draft.trim() || !socket || !conversationId) return;
     socket.emit('send_message', { conversationId, text: draft.trim() });
     setDraft('');
+    setChatError('');
+  }
+
+  async function handleStartRecording() {
+    setChatError('');
+    await startRecording();
+  }
+
+  async function handleStopAndSend() {
+    await sendVoice(await stopRecording());
+  }
+
+  async function sendVoice(audio: RecordedAudio | null) {
+    if (!audio || !conversationId) return;
+
+    setUploadingVoice(true);
+    setChatError('');
+    try {
+      const baseType = audio.mimeType.split(';')[0];
+      const extension = baseType.includes('mp4') ? 'm4a' : baseType.includes('ogg') ? 'ogg' : 'webm';
+
+      const form = new FormData();
+      form.append('duration', String(audio.durationSeconds));
+      form.append('audio', new File([audio.blob], `voice.${extension}`, { type: baseType }));
+
+      const res = await api.post<ChatMessage>(`/messages/${conversationId}/audio`, form);
+      const sent = res.data;
+
+      setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === sent.conversationId
+            ? { ...c, lastMessage: { text: VOICE_PREVIEW, sender: sent.sender, sentAt: sent.createdAt } }
+            : c
+        )
+      );
+    } catch (err: any) {
+      setChatError(err?.response?.data?.message || 'Could not send your voice message. Please try again.');
+    } finally {
+      setUploadingVoice(false);
+    }
   }
 
   function isOnline(c: ConversationSummary) {
@@ -257,45 +334,86 @@ export default function Messages() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto flex flex-col gap-3 px-6 py-5 min-h-0">
-                    {messages.map((m) => {
-                      const mine = m.sender === user?.id;
-                      return (
-                        <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div
-                            className="max-w-xs sm:max-w-sm px-4 py-2.5 rounded-2xl text-sm"
-                            style={
-                              mine
-                                ? { backgroundColor: 'var(--color-coral)', color: '#ffffff' }
-                                : { backgroundColor: 'var(--color-aqua)', color: '#111820' }
-                            }
-                          >
-                            {m.text}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {messages.map((m) => (
+                      <MessageBubble key={m.id} message={m} mine={m.sender === user?.id} />
+                    ))}
                     <div ref={bottomRef} />
                   </div>
 
-                  <div
-                    className="flex items-center gap-3 px-6 py-4 flex-shrink-0"
-                    style={{ borderTop: '1px solid rgba(20,40,50,0.07)' }}
-                  >
-                    <input
-                      value={draft}
-                      onChange={(e) => handleDraftChange(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                      placeholder="Write a message…"
-                      className="flex-1 px-4 py-3 rounded-full text-sm outline-none"
-                      style={{ border: '1px solid rgba(20,40,50,0.1)', fontFamily: 'var(--font-body)', color: '#111820' }}
-                    />
-                    <button
-                      onClick={sendMessage}
-                      className="friends-message-btn px-6 py-3 rounded-full text-sm flex-shrink-0"
-                      style={{ backgroundColor: 'var(--color-coral)', color: '#ffffff', fontFamily: 'var(--font-body)', fontWeight: 500 }}
-                    >
-                      Send
-                    </button>
+                  <div className="px-6 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(20,40,50,0.07)' }}>
+                    {(chatError || recorderError) && (
+                      <p className="text-xs mb-2 px-1" style={{ color: '#B3261E', fontFamily: 'var(--font-body)' }}>
+                        {chatError || recorderError}
+                      </p>
+                    )}
+                    {uploadingVoice && (
+                      <p className="text-xs mb-2 px-1" style={{ color: '#71818A', fontFamily: 'var(--font-body)' }}>
+                        Sending voice message…
+                      </p>
+                    )}
+
+                    {recording ? (
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full animate-pulse flex-shrink-0"
+                          style={{ backgroundColor: '#B3261E' }}
+                        />
+                        <span className="flex-1 text-sm" style={{ fontFamily: 'var(--font-body)', color: '#111820' }}>
+                          Recording… {formatDuration(recordingSeconds)}
+                        </span>
+                        <button
+                          onClick={cancelRecording}
+                          className="px-5 py-3 rounded-full text-sm flex-shrink-0"
+                          style={{ border: '1px solid rgba(20,40,50,0.1)', color: '#111820', fontFamily: 'var(--font-body)' }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleStopAndSend}
+                          className="friends-message-btn px-6 py-3 rounded-full text-sm flex-shrink-0"
+                          style={{ backgroundColor: 'var(--color-coral)', color: '#ffffff', fontFamily: 'var(--font-body)', fontWeight: 500 }}
+                        >
+                          Send
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <input
+                          value={draft}
+                          onChange={(e) => handleDraftChange(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                          placeholder="Write a message…"
+                          className="flex-1 px-4 py-3 rounded-full text-sm outline-none"
+                          style={{ border: '1px solid rgba(20,40,50,0.1)', fontFamily: 'var(--font-body)', color: '#111820' }}
+                        />
+                        <button
+                          onClick={handleStartRecording}
+                          disabled={uploadingVoice}
+                          aria-label="Record a voice message"
+                          title="Record a voice message"
+                          className="flex items-center justify-center rounded-full flex-shrink-0"
+                          style={{
+                            width: 44,
+                            height: 44,
+                            border: '1px solid rgba(20,40,50,0.1)',
+                            color: 'var(--color-turquoise)',
+                            opacity: uploadingVoice ? 0.5 : 1,
+                          }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <rect x="9" y="3" width="6" height="12" rx="3" stroke="currentColor" strokeWidth="2" />
+                            <path d="M5 11a7 7 0 0014 0M12 18v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={sendMessage}
+                          className="friends-message-btn px-6 py-3 rounded-full text-sm flex-shrink-0"
+                          style={{ backgroundColor: 'var(--color-coral)', color: '#ffffff', fontFamily: 'var(--font-body)', fontWeight: 500 }}
+                        >
+                          Send
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </>
               )}

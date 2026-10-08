@@ -1,0 +1,3 @@
+# Uploaded voice messages are user data, not source.
+uploads/audio/*
+!uploads/audio/.gitkeep

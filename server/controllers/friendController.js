@@ -4,7 +4,7 @@ import { notify } from '../utils/notify.js';
 import { isUserOnline } from '../sockets/index.js';
 
 const PUBLIC_FIELDS =
-  'name username avatar country nativeLanguages learningLanguages interests bio';
+  'name username avatar country nativeLanguages learningLanguages interests bio showOnlineStatus';
 
 export async function sendFriendRequest(req, res) {
   try {
@@ -136,7 +136,7 @@ export async function listFriends(req, res) {
       country: f.country,
       nativeLanguages: f.nativeLanguages,
       learningLanguages: f.learningLanguages,
-      online: isUserOnline(f._id.toString()),
+      online: f.showOnlineStatus === false ? false : isUserOnline(f._id.toString()),
     }));
 
     const incoming = await FriendRequest.find({ recipient: req.user.id, status: 'pending' }).populate(

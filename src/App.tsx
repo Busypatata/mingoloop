@@ -16,6 +16,7 @@ import Messages from './pages/Messages';
 import Community from './pages/Community';
 import CommunityQuestionPage from './pages/CommunityQuestion';
 import VideoSession from './pages/VideoSession';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -42,6 +43,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />
