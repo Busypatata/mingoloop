@@ -131,8 +131,14 @@ async function translateChunk(text, targetCode) {
     throw new TranslateError('UNAVAILABLE');
   }
 
-  if (response.status === 429) throw new TranslateError('QUOTA');
-  if (!response.ok) throw new TranslateError('UNAVAILABLE');
+  if (response.status === 429) {
+    console.error('[translate] MyMemory HTTP 429');
+    throw new TranslateError('QUOTA');
+  }
+  if (!response.ok) {
+    console.error('[translate] MyMemory HTTP', response.status);
+    throw new TranslateError('UNAVAILABLE');
+  }
 
   let data;
   try {
@@ -145,14 +151,65 @@ async function translateChunk(text, targetCode) {
   if (/DISTINCT LANGUAGES/i.test(String(data.responseDetails || ''))) {
     return { text, detected: targetCode };
   }
-  if (data.quotaFinished || Number(data.responseStatus) === 429) throw new TranslateError('QUOTA');
-  if (Number(data.responseStatus) !== 200) throw new TranslateError('UNAVAILABLE');
+  if (data.quotaFinished || Number(data.responseStatus) === 429) {
+    console.error('[translate] MyMemory quota:', JSON.stringify(data).slice(0, 300));
+    throw new TranslateError('QUOTA');
+  }
+  if (Number(data.responseStatus) !== 200) {
+    console.error('[translate] MyMemory error:', JSON.stringify(data).slice(0, 300));
+    throw new TranslateError('UNAVAILABLE');
+  }
 
   const translated = data.responseData?.translatedText;
   if (!translated) throw new TranslateError('UNAVAILABLE');
-  if (/^MYMEMORY WARNING/i.test(translated)) throw new TranslateError('QUOTA');
+  if (/^MYMEMORY WARNING/i.test(translated)) {
+    console.error('[translate] MyMemory warning:', translated.slice(0, 200));
+    throw new TranslateError('QUOTA');
+  }
 
   return { text: decodeEntities(translated), detected: data.responseData?.detectedLanguage };
+}
+
+// Backup used when MyMemory refuses (quota / outage). Google's public web
+// endpoint, no API key needed.
+async function translateChunkFallback(text, targetCode) {
+  const params = new URLSearchParams({ client: 'gtx', sl: 'auto', tl: targetCode, dt: 't', q: text });
+  let response;
+  try {
+    response = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, {
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (err) {
+    console.error('[translate] fallback request failed:', err.message);
+    throw new TranslateError('UNAVAILABLE');
+  }
+  if (response.status === 429) throw new TranslateError('QUOTA');
+  if (!response.ok) {
+    console.error('[translate] fallback HTTP', response.status);
+    throw new TranslateError('UNAVAILABLE');
+  }
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new TranslateError('UNAVAILABLE');
+  }
+  const translated = Array.isArray(data?.[0]) ? data[0].map((part) => part?.[0] || '').join('') : '';
+  if (!translated) throw new TranslateError('UNAVAILABLE');
+  return { text: translated, detected: typeof data[2] === 'string' ? data[2] : undefined };
+}
+
+async function translateWithFallback(chunk, targetCode) {
+  try {
+    return await translateChunk(chunk, targetCode);
+  } catch (error) {
+    if (!(error instanceof TranslateError)) throw error;
+    try {
+      return await translateChunkFallback(chunk, targetCode);
+    } catch {
+      throw error; // report the original MyMemory problem
+    }
+  }
 }
 
 const cache = new Map();
@@ -165,7 +222,7 @@ export async function translateText(text, targetCode, cacheKey) {
   const chunks = splitIntoChunks(text);
   const results = [];
   for (const chunk of chunks) {
-    results.push(await translateChunk(chunk, targetCode));
+    results.push(await translateWithFallback(chunk, targetCode));
   }
 
   const sameLanguage =
